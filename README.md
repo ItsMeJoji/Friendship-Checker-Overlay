@@ -17,25 +17,12 @@ A dynamic Twitch chat overlay that displays Pokémon sprites for viewers based o
 npm install
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory:
-```env
-# Twitch Chat (TMI)
-TWITCH_USERNAME=your_channel_name
-TWITCH_OAUTH_TOKEN=oauth:your_token
-
-# Twitch API (EventSub)
-CLIENT_ID=your_client_id
-CLIENT_SECRET=your_client_secret
-REDIRECT_URI=http://localhost:5173/callback
-```
-
-### 3. Run the Development Server
+### 2. Run the Development Server
 ```bash
 npm run dev
 ```
 
-### 4. Configure Channel Points
+### 3. Configure Channel Points
 1. Go to your [Twitch Channel Points Management](https://dashboard.twitch.tv/u/{username}/points/rewards).
 2. Create or edit rewards with the following exact titles:
    - `Pokemon Overlay Reroll`
