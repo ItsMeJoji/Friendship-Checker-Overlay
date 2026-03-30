@@ -22,6 +22,14 @@ export function getAccessTokenFromUrl() {
     return params.get('access_token');
 }
 
+export function authTwitch(clientId, redirectUri) {
+    const scope = encodeURIComponent('chat:read channel:read:redemptions');
+    const responseType = 'token';
+    const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`;
+
+    window.location.href = authUrl;
+}
+
 export async function saveUserPokemonData(username, pokemonData) {
     const storedData = JSON.parse(localStorage.getItem('userPokemonData') || '{}');
     storedData[username] = pokemonData;
