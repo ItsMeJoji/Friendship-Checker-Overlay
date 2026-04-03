@@ -105,17 +105,24 @@ async function subscribeToRedemptions(token, username, clientId) {
     const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Client-Id': clientId }
     });
+    
+    if (userRes.status === 401) {
+        console.error('Twitch API 401 Unauthorized when fetching user. Clearing token to force re-auth.');
+        localStorage.removeItem('access_token');
+        return;
+    }
+    
     const userData = await userRes.json();
 
-    if (!userData) {
-        console.error('Twitch API Error:', userData);
+    if (!userData || !userData.data || !userData.data.length) {
+        console.error('Twitch API Error or user not found:', userData);
         return;
     }
 
     const broadcasterId = userData.data[0].id;
 
     // B. Register the Redemption Subscription
-    await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+    const res = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -129,6 +136,16 @@ async function subscribeToRedemptions(token, username, clientId) {
             transport: { method: 'websocket', session_id: sessionId }
         })
     });
+
+    if (res.status === 401) {
+        console.error('Twitch API 401 Unauthorized. Clearing token to force re-auth.');
+        localStorage.removeItem('access_token');
+        // Optionally redirect to auth:
+        // window.location.reload();
+    } else {
+        const subData = await res.json();
+        console.log('Subscription response:', subData);
+    }
 }
 
 

@@ -89,6 +89,8 @@ export async function addPokemon(chatter, initialMessage = '', options = {}) {
             vx: (Math.random() * 2 - 1) * CONFIG.speedAdjust,
             vy: (Math.random() * 2 - 1) * CONFIG.speedAdjust,
             img: img,
+            currentScale: 1,
+            targetScale: 1,
             isDynamaxed: false,
             message: initialMessage,
             messageTimer: initialMessage ? Date.now() + 5000 : 0

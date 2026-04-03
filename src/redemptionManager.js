@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { addPokemon } from './pokemonManager.js';
 import { CONFIG } from './config.js';
+import { getPokemonSpritePath, loadAndCropImage } from './assetsLoader.js';
 
 /**
  * Main entry point for processing EventSub notifications.
@@ -26,17 +27,73 @@ export function handleRedemption(eventData) {
             addPokemon(chatter, `I redeemed ${rewardTitle}!`, { forceReroll: true, increaseShinyChance: true });
             break;
 
-        case "Dynamax My Pokemon":
-            const p = state.pokemon.find(p => p.username === user);
-            if (p) {
-                p.isDynamaxed = true;
-                p.message = "DYNAMAX POWER!";
-                p.messageTimer = Date.now() + 5000;
+        case "Dynamax!":
+            console.log(`[Redemption] ${user} used Dynamax!`);
 
-                // Optional: Auto-shrink after the duration in CONFIG
+            const applyDynamax = async (pokemon) => {
+                pokemon.targetScale = 3;
+                pokemon.message = `${user} used Dynamax!`;
+                pokemon.messageTimer = Date.now() + 5000;
+
+                // Load GMAX form if available
+                const baseNameRe = /-gmax$/; // sanity check
+                // Construct the GMAX name
+                const isShiny = pokemon.pokemonName.endsWith('-s');
+                const baseIdentifier = pokemon.pokemonName.replace('-s', '');
+                
+                // Construct the potential gmax name
+                let gmaxName = isShiny ? `${baseIdentifier}-gmax-s` : `${baseIdentifier}-gmax`;
+                
+                const gmaxPath = getPokemonSpritePath(gmaxName);
+                const gmaxImg = await loadAndCropImage(gmaxName, gmaxPath);
+
+                if (gmaxImg) {
+                    pokemon.originalImg = pokemon.img;
+                    pokemon.img = gmaxImg;
+                    pokemon.message = `${user} used Gigantamax!`;
+                }
+
                 setTimeout(() => {
-                    p.isDynamaxed = false;
-                }, CONFIG.dynamaxDuration || 15000);
+                    pokemon.targetScale = 1;
+                    if (pokemon.originalImg) {
+                        pokemon.img = pokemon.originalImg;
+                        pokemon.originalImg = null;
+                    }
+                }, CONFIG.dynamaxDuration || 60000);
+            };
+
+            let p = state.pokemon.find(p => p.username === user);
+            if (p) {
+                applyDynamax(p);
+            } else {
+                addPokemon(chatter, "DYNAMAX POWER!").then(() => {
+                    let newP = state.pokemon.find(p => p.username === user);
+                    if (newP) applyDynamax(newP);
+                });
+            }
+            break;
+
+        case "X-Speed!":
+            console.log(`[Redemption] ${user} used X-Speed!`);
+
+            const applyXSpeed = (pokemon) => {
+                pokemon.speedMultiplier = 5; // more than double for better effect
+                pokemon.message = `${user} used an X-Speed!`;
+                pokemon.messageTimer = Date.now() + 5000;
+
+                setTimeout(() => {
+                    pokemon.speedMultiplier = 1;
+                }, 60000);
+            };
+
+            let px = state.pokemon.find(p => p.username === user);
+            if (px) {
+                applyXSpeed(px);
+            } else {
+                addPokemon(chatter, "X-SPEED!").then(() => {
+                    let newPx = state.pokemon.find(p => p.username === user);
+                    if (newPx) applyXSpeed(newPx);
+                });
             }
             break;
 
