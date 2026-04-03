@@ -27,6 +27,33 @@
         #bufferCanvas {
             display: none;
         }
+        .pokemon-message {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 24px;
+            color: yellow;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 
+                -2px -2px 0 #000,  
+                 2px -2px 0 #000,
+                -2px  2px 0 #000,
+                 2px  2px 0 #000;
+            width: max-content;
+            max-width: 320px;
+            transform-origin: center bottom;
+            will-change: transform;
+            display: none;
+            z-index: 1000;
+        }
+        .pokemon-message img {
+            vertical-align: bottom;
+            height: 32px;
+            margin: 0 4px;
+        }
     </style>
 </head>
 <body>

@@ -50,7 +50,7 @@ async function init() {
 
     state.client.on('message', (channel, tags, message, self) => {
         const username = tags.username;
-        const chatter = { user_name: username };
+        const chatter = { user_name: username, emotes: tags.emotes };
 
         // This now handles both initial spawn and message updates
         addPokemon(chatter, message);

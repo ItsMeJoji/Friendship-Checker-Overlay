@@ -32,8 +32,15 @@ export function handleRedemption(eventData) {
 
             const applyDynamax = async (pokemon) => {
                 pokemon.targetScale = 3;
-                pokemon.message = `${user} used Dynamax!`;
                 pokemon.messageTimer = Date.now() + 5000;
+                
+                if (!pokemon.msgElement) {
+                    pokemon.msgElement = document.createElement('div');
+                    pokemon.msgElement.className = 'pokemon-message';
+                    document.getElementById('container').appendChild(pokemon.msgElement);
+                }
+                pokemon.msgElement.innerHTML = `${user} used Dynamax!`;
+                pokemon.msgElement.style.display = 'block';
 
                 // Load GMAX form if available
                 const baseNameRe = /-gmax$/; // sanity check
@@ -50,7 +57,7 @@ export function handleRedemption(eventData) {
                 if (gmaxImg) {
                     pokemon.originalImg = pokemon.img;
                     pokemon.img = gmaxImg;
-                    pokemon.message = `${user} used Gigantamax!`;
+                    pokemon.msgElement.innerHTML = `${user} used Gigantamax!`;
                 }
 
                 setTimeout(() => {
@@ -76,10 +83,17 @@ export function handleRedemption(eventData) {
         case "X-Speed!":
             console.log(`[Redemption] ${user} used X-Speed!`);
 
-            const applyXSpeed = (pokemon) => {
-                pokemon.speedMultiplier = 5; // more than double for better effect
-                pokemon.message = `${user} used an X-Speed!`;
+            const applySpeed = (pokemon) => {
+                pokemon.speedMultiplier = 5.0; // 5x speed
                 pokemon.messageTimer = Date.now() + 5000;
+                
+                if (!pokemon.msgElement) {
+                    pokemon.msgElement = document.createElement('div');
+                    pokemon.msgElement.className = 'pokemon-message';
+                    document.getElementById('container').appendChild(pokemon.msgElement);
+                }
+                pokemon.msgElement.innerHTML = `${user} used an X-Speed!`;
+                pokemon.msgElement.style.display = 'block';
 
                 setTimeout(() => {
                     pokemon.speedMultiplier = 1;
@@ -88,11 +102,11 @@ export function handleRedemption(eventData) {
 
             let px = state.pokemon.find(p => p.username === user);
             if (px) {
-                applyXSpeed(px);
+                applySpeed(px);
             } else {
                 addPokemon(chatter, "X-SPEED!").then(() => {
                     let newPx = state.pokemon.find(p => p.username === user);
-                    if (newPx) applyXSpeed(newPx);
+                    if (newPx) applySpeed(newPx);
                 });
             }
             break;

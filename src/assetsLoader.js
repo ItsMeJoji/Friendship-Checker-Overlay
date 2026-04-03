@@ -73,3 +73,43 @@ export async function loadAndCropImage(name, path) {
         };
     });
 }
+
+export async function parseAndPreloadEmotes(message, emotes) {
+    const escapeHtml = (unsafe) => {
+        return unsafe
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    };
+
+    if (!emotes) return escapeHtml(message);
+    
+    let replacements = [];
+    for (const [id, positions] of Object.entries(emotes)) {
+        for (const pos of positions) {
+            const [start, end] = pos.split('-').map(Number);
+            replacements.push({ start, end, id });
+        }
+    }
+    
+    // Sort forwards to slice the string accurately
+    replacements.sort((a, b) => a.start - b.start);
+    
+    let parsedMessage = '';
+    let lastIndex = 0;
+    
+    for (const r of replacements) {
+        // Append escaped text before the emote
+        parsedMessage += escapeHtml(message.substring(lastIndex, r.start));
+        // Append the img tag
+        const url = `https://static-cdn.jtvnw.net/emoticons/v2/${r.id}/default/dark/1.0`;
+        parsedMessage += `<img src="${url}" alt="emote" />`;
+        lastIndex = r.end + 1;
+    }
+    // Append remaining escaped text
+    parsedMessage += escapeHtml(message.substring(lastIndex));
+    
+    return parsedMessage;
+}

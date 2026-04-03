@@ -1,29 +1,6 @@
 import { state } from './state.js';
 import { CONFIG } from './config.js';
 
-function drawWrappedText(ctx, text, x, base_y, maxChars, lineHeight) {
-    const words = text.split(' ');
-    let line = '';
-    const lines = [];
-
-    for (let i = 0; i < words.length; i++) {
-        let testLine = line + words[i] + ' ';
-        if (testLine.length > maxChars && line !== '') {
-            lines.push(line.trim());
-            line = words[i] + ' ';
-        } else {
-            line = testLine;
-        }
-    }
-    lines.push(line.trim());
-
-    // Draw lines upwards so they stack above the Pokemon
-    lines.reverse().forEach((l, index) => {
-        ctx.strokeText(l, x, base_y - (index * lineHeight));
-        ctx.fillText(l, x, base_y - (index * lineHeight));
-    });
-}
-
 export function update() {
     state.pokemon.forEach((p, index) => {
         // Move
@@ -69,6 +46,19 @@ export function update() {
                 p.y += Math.sin(angle) * 2;
             }
         }
+        
+        // Sync message DOM element
+        if (p.msgElement) {
+            if (Date.now() < p.messageTimer) {
+                const centerX = p.x + width / 2;
+                const textY = p.y - 15; 
+                // Using a more robust translation pattern for centering
+                p.msgElement.style.transform = `translate(${centerX}px, ${textY}px) translate(-50%, -100%)`;
+                p.msgElement.style.display = 'block';
+            } else {
+                p.msgElement.style.display = 'none';
+            }
+        }
     });
 }
 
@@ -103,14 +93,6 @@ export function draw() {
         
         state.ctx.strokeText(p.username, textX, textY);
         state.ctx.fillText(p.username, textX, textY);
-
-        // Draw Message (skip if it contains a URL or bare domain like poketrainer.tools)
-        const hasLink = /https?:\/\/|www\.|\b[a-z\d][\w-]*\.[a-z]{2,}/i.test(p.message);
-        if (p.message && !hasLink && Date.now() < p.messageTimer) {
-            state.ctx.fillStyle = "yellow";
-            state.ctx.font = "bold 24px Arial";
-            drawWrappedText(state.ctx, p.message, textX, p.y - 10, 20, 28);
-        }
     });
 }
 
