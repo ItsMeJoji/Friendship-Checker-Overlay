@@ -8,10 +8,10 @@ export function getUrlParameter(name) {
 export const CONFIG = {
     canvasWidth: 1920,
     canvasHeight: 1080,
-    speedAdjust: 0.75,
+    speedAdjust: 1,
     padding: 50,
     collisionSize: 60,
-    dynamaxDuration: 15000,
+    dynamaxDuration: 60000,
     username: getUrlParameter('username'), // Store channel name here
     client_id: getUrlParameter('client_id'),
     specialUsers: {
