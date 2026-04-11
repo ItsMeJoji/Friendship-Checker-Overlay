@@ -1,3 +1,13 @@
+// Nudge all sprites back to base speed
+export function nudgeSprites() {
+    state.pokemon.forEach(p => {
+        let speed = Math.hypot(p.vx, p.vy);
+        if (speed !== 0) {
+          p.vx = (p.vx / speed) * BASE_SPEED;
+          p.vy = (p.vy / speed) * BASE_SPEED;
+        }
+    });
+}
 import { state } from './state.js';
 import { CONFIG } from './config.js';
 

@@ -2,7 +2,7 @@ import tmi from 'tmi.js';
 import { state } from './state.js';
 import { CONFIG, getUrlParameter } from './config.js';
 import { addPokemon, spawnTestPokemon, resetOverlay } from './pokemonManager.js';
-import { loop } from './renderer.js';
+import { loop, nudgeSprites } from './renderer.js';
 import { retrieveAccessToken, authTwitch, getAccessTokenFromUrl, storeAccessToken } from './utils.js';
 import { handleRedemption } from './redemptionManager.js';
 
@@ -64,6 +64,9 @@ async function init() {
             }
             if (message.trim() === '!speed') {
                 handleRedemption({ reward: { title: "X-Speed!" }, user_login: username });
+            }
+            if (message.trim() === '!nudge') {
+                nudgeSprites();
             }
         }
     });
