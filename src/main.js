@@ -59,6 +59,12 @@ async function init() {
         if (username === 'itsmejoji') {
             if (message.trim() === '!spawn') spawnTestPokemon();
             if (message.trim() === '!reset') resetOverlay();
+            if (message.trim() === '!dynamax') {
+                handleRedemption({ reward: { title: "Dynamax!" }, user_login: username });
+            }
+            if (message.trim() === '!speed') {
+                handleRedemption({ reward: { title: "X-Speed!" }, user_login: username });
+            }
         }
     });
 

@@ -31,9 +31,15 @@ export function handleRedemption(eventData) {
             console.log(`[Redemption] ${user} used Dynamax!`);
 
             const applyDynamax = async (pokemon) => {
+                // Clear existing timeout if any
+                if (pokemon.dynamaxTimeoutId) {
+                    clearTimeout(pokemon.dynamaxTimeoutId);
+                }
+
                 pokemon.targetScale = 3;
-                pokemon.messageTimer = Date.now() + 5000;
-                
+                const duration = CONFIG.dynamaxDuration || 60000;
+                pokemon.messageTimer = Date.now() + 5000; // Reset to 5 seconds
+
                 if (!pokemon.msgElement) {
                     pokemon.msgElement = document.createElement('div');
                     pokemon.msgElement.className = 'pokemon-message';
@@ -47,26 +53,27 @@ export function handleRedemption(eventData) {
                 // Construct the GMAX name
                 const isShiny = pokemon.pokemonName.endsWith('-s');
                 const baseIdentifier = pokemon.pokemonName.replace('-s', '');
-                
+
                 // Construct the potential gmax name
                 let gmaxName = isShiny ? `${baseIdentifier}-gmax-s` : `${baseIdentifier}-gmax`;
-                
+
                 const gmaxPath = getPokemonSpritePath(gmaxName);
                 const gmaxImg = await loadAndCropImage(gmaxName, gmaxPath);
 
                 if (gmaxImg) {
-                    pokemon.originalImg = pokemon.img;
+                    pokemon.originalImg = pokemon.originalImg || pokemon.img;
                     pokemon.img = gmaxImg;
                     pokemon.msgElement.innerHTML = `${user} used Gigantamax!`;
                 }
 
-                setTimeout(() => {
+                pokemon.dynamaxTimeoutId = setTimeout(() => {
                     pokemon.targetScale = 1;
                     if (pokemon.originalImg) {
                         pokemon.img = pokemon.originalImg;
                         pokemon.originalImg = null;
                     }
-                }, CONFIG.dynamaxDuration || 60000);
+                    pokemon.dynamaxTimeoutId = null;
+                }, duration);
             };
 
             let p = state.pokemon.find(p => p.username === user);
@@ -84,9 +91,14 @@ export function handleRedemption(eventData) {
             console.log(`[Redemption] ${user} used X-Speed!`);
 
             const applySpeed = (pokemon) => {
+                // Clear existing timeout if any
+                if (pokemon.speedTimeoutId) {
+                    clearTimeout(pokemon.speedTimeoutId);
+                }
+
                 pokemon.speedMultiplier = 5.0; // 5x speed
-                pokemon.messageTimer = Date.now() + 5000;
-                
+                pokemon.messageTimer = Date.now() + 5000; // Reset to 5 seconds
+
                 if (!pokemon.msgElement) {
                     pokemon.msgElement = document.createElement('div');
                     pokemon.msgElement.className = 'pokemon-message';
@@ -95,8 +107,9 @@ export function handleRedemption(eventData) {
                 pokemon.msgElement.innerHTML = `${user} used an X-Speed!`;
                 pokemon.msgElement.style.display = 'block';
 
-                setTimeout(() => {
+                pokemon.speedTimeoutId = setTimeout(() => {
                     pokemon.speedMultiplier = 1;
+                    pokemon.speedTimeoutId = null;
                 }, 60000);
             };
 
