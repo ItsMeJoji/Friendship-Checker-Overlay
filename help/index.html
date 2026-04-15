@@ -448,7 +448,8 @@
                 return;
             }
 
-            const baseUrl = new URL('index.html', window.location.href);
+            const siteRootPath = window.location.pathname.replace(/\/help(?:\/index\.html|\/?)$/, '/');
+            const baseUrl = new URL('index.html', `${window.location.origin}${siteRootPath}`);
             baseUrl.searchParams.set('username', username);
             baseUrl.searchParams.set('client_id', clientId);
             generatedLink.value = baseUrl.toString();
