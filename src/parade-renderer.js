@@ -14,8 +14,24 @@ export function update() {
 
         // Position on a singular plane at the bottom
         // We leave space for the name (approx 50px) and some bottom padding
-        const groundY = CONFIG.canvasHeight - height - 100; 
-        p.y = groundY;
+        const groundY = CONFIG.canvasHeight - height - 100;
+        
+        // Jump Physics
+        if (p.jumpVy === undefined) p.jumpVy = 0;
+
+        // Start them on ground if they are spawned too low or first time setup
+        if (p.y === undefined || p.y > groundY + 50 || p.y < -100) {
+             p.y = groundY;
+        }
+
+        p.jumpVy += 0.8; // Gravity
+        p.y += p.jumpVy;
+
+        // Floor collision
+        if (p.y >= groundY) {
+            p.y = groundY;
+            p.jumpVy = 0;
+        }
 
         const isMessaging = Date.now() < p.messageTimer;
         const speedMult = p.speedMultiplier || 1;

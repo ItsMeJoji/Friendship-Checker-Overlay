@@ -48,6 +48,21 @@ async function init() {
 
         addPokemon(chatter, message);
 
+        if (message.trim() === '!jump') {
+            const p = state.pokemon.find(p => p.username === username);
+            if (p) {
+                // Determine if they are close to the ground to allow jumping
+                const scale = p.currentScale || 1;
+                const height = p.img.height * scale;
+                const groundY = CONFIG.canvasHeight - height - 100;
+                
+                // Allow jump if they are within 10 pixels of the ground (or exactly on it)
+                if (Math.abs(p.y - groundY) <= 10) {
+                    p.jumpVy = -15; 
+                }
+            }
+        }
+
         // Commands
         if (username === 'itsmejoji') {
             if (message.trim() === '!spawn') spawnTestPokemon();
