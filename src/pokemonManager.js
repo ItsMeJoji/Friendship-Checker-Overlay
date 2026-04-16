@@ -32,7 +32,14 @@ export async function addPokemon(chatter, initialMessage = '', options = {}) {
     const username = chatter.user_name || chatter.username || 'unknown';
 
     let displayMessage = initialMessage;
-    if (displayMessage && chatter.emotes) {
+    
+    // Filter out links
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+    if (urlRegex.test(displayMessage)) {
+        displayMessage = "";
+    }
+
+    if (displayMessage) {
         displayMessage = await parseAndPreloadEmotes(displayMessage, chatter.emotes);
     }
 

@@ -84,7 +84,11 @@ export async function parseAndPreloadEmotes(message, emotes) {
              .replace(/'/g, "&#039;");
     };
 
-    if (!emotes) return escapeHtml(message);
+    const isSingleWord = !emotes && message.trim().split(/\s+/).length === 1;
+
+    if (!emotes) {
+        return escapeHtml(isSingleWord ? truncateText(message) : message);
+    }
     
     let replacements = [];
     for (const [id, positions] of Object.entries(emotes)) {
@@ -101,7 +105,7 @@ export async function parseAndPreloadEmotes(message, emotes) {
     let lastIndex = 0;
     
     for (const r of replacements) {
-        // Append escaped text before the emote
+        // Append escaped text before the emote (no truncation here since emotes imply > 1 word or mixed content)
         parsedMessage += escapeHtml(message.substring(lastIndex, r.start));
         // Append the img tag
         const url = `https://static-cdn.jtvnw.net/emoticons/v2/${r.id}/default/dark/1.0`;
@@ -112,4 +116,14 @@ export async function parseAndPreloadEmotes(message, emotes) {
     parsedMessage += escapeHtml(message.substring(lastIndex));
     
     return parsedMessage;
+}
+
+function truncateText(text) {
+    if (!text) return "";
+    return text.split(' ').map(word => {
+        if (word.length > 28) {
+            return word.substring(0, 28) + "...";
+        }
+        return word;
+    }).join(' ');
 }
