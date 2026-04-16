@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         help: resolve(__dirname, 'help/index.html'),
+        parade: resolve(__dirname, 'parade/index.html'),
       },
     },
   },

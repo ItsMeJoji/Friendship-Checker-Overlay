@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friendship Checker - Parade Mode</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        #container {
+            width: 1920px;
+            height: 1080px;
+            position: relative;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0);
+        }
+
+        #mainCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #bufferCanvas {
+            display: none;
+        }
+
+        .pokemon-message {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-weight: bold;
+            font-size: 22px;
+            color: #ffff00;
+            text-align: center;
+            pointer-events: none;
+            /* Speech Bubble Disabled
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+            */
+            text-shadow:
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000;
+            width: max-content;
+            max-width: 350px;
+            transform-origin: center bottom;
+            will-change: transform;
+            display: none;
+            z-index: 1000;
+        }
+
+        /* Speech Bubble Tail Disabled
+        .pokemon-message::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.3) transparent transparent;
+        }
+        */
+
+        .pokemon-message img {
+            vertical-align: bottom;
+            height: 32px;
+            margin: 0 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <canvas id="mainCanvas" width="1920" height="1080"></canvas>
+        <canvas id="bufferCanvas"></canvas>
+    </div>
+
+    <script type="module" src="/src/parade-main.js"></script>
+</body>
+
+</html>

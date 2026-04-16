@@ -367,6 +367,12 @@
                             <input id="clientIdInput" type="text" placeholder="your_client_id" autocomplete="off">
                         </div>
                     </div>
+                    <div class="field" style="margin-top: 12px; margin-bottom: 8px;">
+                        <label class="label-row" style="cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; color: var(--muted);">
+                            <input id="paradeToggle" type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-strong);">
+                            <span>Use Parade Mode (Walking at the bottom)</span>
+                        </label>
+                    </div>
                     <div class="button-row">
                         <button id="generateButton" class="button" type="button">Generate link</button>
                     </div>
@@ -438,6 +444,7 @@
         const clientIdInput = document.getElementById('clientIdInput');
         const generateButton = document.getElementById('generateButton');
         const generatedLink = document.getElementById('generatedLink');
+        const paradeToggle = document.getElementById('paradeToggle');
 
         function buildOverlayUrl() {
             const username = usernameInput.value.trim();
@@ -449,7 +456,8 @@
             }
 
             const siteRootPath = window.location.pathname.replace(/\/help(?:\/index\.html|\/?)$/, '/');
-            const baseUrl = new URL('index.html', `${window.location.origin}${siteRootPath}`);
+            const targetPage = paradeToggle.checked ? 'parade/index.html' : 'index.html';
+            const baseUrl = new URL(targetPage, `${window.location.origin}${siteRootPath}`);
             baseUrl.searchParams.set('username', username);
             baseUrl.searchParams.set('client_id', clientId);
             generatedLink.value = baseUrl.toString();

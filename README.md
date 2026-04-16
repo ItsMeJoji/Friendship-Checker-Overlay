@@ -1,65 +1,47 @@
 # Pokémon Friendship Overlay
 
-A dynamic Twitch chat overlay that displays Pokémon sprites for viewers based on their messages. Viewers can trigger special events like Dynamax or Pokémon rerolls using Channel Points.
+A dynamic Twitch chat overlay that brings Pokémon to your stream! Viewers can spawn their own Pokémon, chat through them, and use Channel Points for special effects.
 
-## Features
-- **Real-time Pokémon Display**: Pokémon sprites appear when viewers chat.
-- **Special Users**: Predefined Pokémon for specific users (e.g., Blastoise for itsmejoji).
-- **Channel Point Integration (WIP)**: Trigger events like Dynamax or Pokémon rerolls.
-- **User-Specific Pokémon**: Users keep the same Pokémon unless they reroll.
-- **Shiny Pokémon**: 10% chance for a Pokémon to be shiny.
-- **Message Display**: Last message appears above the Pokémon.
+## ✨ Features
 
-## Setup
+- **Classic Mode**: Pokémon bounce around the screen with collisions.
+- **Parade Mode**: Pokémon walk horizontally along the bottom of the screen.
+- **Twitch Integration**: Real-time chat messages appear.
+- **Channel Point Rewards**: Trigger Dynamax, X-Speed, or Rerolls.
+- **Shiny Luck**: Every spawn has a chance to be shiny!
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+## 🚀 Getting Started
 
-### 2. Run the Development Server
-```bash
-npm run dev
-```
+The easiest way to set up your overlay is using the built-in **Help Page**. It includes a link generator to help you create the perfect URL for OBS.
 
-### 3. Configure Channel Points
-1. Go to your [Twitch Channel Points Management](https://dashboard.twitch.tv/u/{username}/points/rewards).
-2. Create or edit rewards with the following exact titles:
-   - `Pokemon Overlay Reroll`
-   - `Shiny Pokemon Overlay Reroll`
-   - `Dynamax!`
-   - `Choose Your Pokemon on the Overlay!`
-3. Ensure the rewards are enabled and have the correct point costs.
+1. **Launch the Help Page**: Navigate to `https://itsmejoji.github.io/Friendship-Checker-Overlay/help/` in your browser.
+2. **Generate your Link**: Enter your Twitch username and Client ID.
+3. **Authorize**: Follow the Twitch login prompts.
+4. **Add to OBS**: Copy the final URL from the browser console and add it as a **Browser Source** (1920x1080).
 
-## Usage
 
-### URL Parameters
-- `?username=your_channel_name`: Sets the Twitch channel to connect to.
-- `?client_id=your_client_id`: Sets the Twitch Client ID for API access.
+## 💎 Channel Point Setup
 
-### Commands
-- `!spawn`: (Admin only) Spawns a test Pokémon.
-- `!reset`: (Admin only) Clears all Pokémon from the overlay.
+To enable interactivity, create rewards with these **exact** titles:
 
-## Project Structure
-- `src/main.js`: Entry point, handles TMI connection and initialization.
-- `src/pokemonManager.js`: Manages Pokémon spawning, updates, and Channel Point redemption handling.
-- `src/twitchService.js`: Handles Twitch API authentication and EventSub connections.
-- `src/assetsLoader.js`: Loads and caches Pokémon sprites.
-- `src/availablePokemon.js`: List of available Pokémon.
-- `src/config.js`: Configuration and URL parameter handling.
-- `src/state.js`: Global state management.
+- `Pokemon Overlay Reroll`: Changes the user's current Pokémon.
+- `Shiny Pokemon Overlay Reroll`: Forces a shiny reroll.
+- `Dynamax!`: Grows the Pokémon and triggers its GMAX form (if available).
+- `X-Speed!`: Gives the Pokémon a temporary speed boost.
 
-## Development
+## 🛠 Commands
 
-### Adding New Pokémon
-1. Add the Pokémon name to `src/availablePokemon.js`.
-2. Ensure the sprite exists in `public/pokemon/` with the correct filename (e.g., `blastoise.png`).
+- `!spawn`: (Broadcaster only) Spawns a random test Pokémon.
+- `!reset`: (Broadcaster only) Clears all Pokémon from the screen.
+- `!nudge`: (Broadcaster only) Resets all Pokémon back to their base speed.
 
-### Handling Channel Point Redemptions
-1. Open `src/twitchService.js`.
-2. Modify the `handleChannelPointRedemption` function to add new reward logic.
-3. Ensure the reward titles match exactly what you set up in Twitch.
+## 📦 Project Structure
 
-## License
+- `index.html` / `parade/index.html`: Main entry points for the different modes.
+- `help/index.html`: Self-hosted setup guide and link generator.
+- `src/renderer.js` / `src/parade-renderer.js`: Movement and rendering systems.
+- `src/pokemonManager.js`: Pokémon spawning and message handling.
+- `src/redemptionManager.js`: Twitch EventSub reward handling.
+
+## 📜 License
 MIT
