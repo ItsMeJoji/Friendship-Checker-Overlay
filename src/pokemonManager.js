@@ -33,6 +33,11 @@ export async function addPokemon(chatter, initialMessage = '', options = {}) {
 
     let displayMessage = initialMessage;
     
+    // Filter out commands (starts with ! and is the only word)
+    if (displayMessage.trim().startsWith('!') && !displayMessage.trim().includes(' ')) {
+        displayMessage = "";
+    }
+
     // Filter out links
     const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
     if (urlRegex.test(displayMessage)) {

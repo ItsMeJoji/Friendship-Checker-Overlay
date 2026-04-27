@@ -55,10 +55,17 @@ async function init() {
                 const scale = p.currentScale || 1;
                 const height = p.img.height * scale;
                 const groundY = CONFIG.canvasHeight - height - 100;
-                
+
                 // Allow jump if they are within 10 pixels of the ground (or exactly on it)
                 if (Math.abs(p.y - groundY) <= 10) {
-                    p.jumpVy = -15; 
+                    const roll = Math.random();
+                    if (roll < 0.01) {
+                        p.jumpVy = -35;
+                    } else if (roll < 0.11) {
+                        p.jumpVy = -20;
+                    } else {
+                        p.jumpVy = -10;
+                    }
                 }
             }
         }
