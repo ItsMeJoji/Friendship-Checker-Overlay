@@ -1,10 +1,11 @@
 import tmi from 'tmi.js';
 import { state } from './state.js';
 import { CONFIG, getUrlParameter } from './config.js';
-import { addPokemon, spawnTestPokemon, resetOverlay } from './pokemonManager.js';
+import { addPokemon, spawnTestPokemon, resetOverlay, checkPokemonMessage } from './pokemonManager.js';
 import { loop, nudgeSprites } from './renderer.js';
 import { retrieveAccessToken, authTwitch, getAccessTokenFromUrl, storeAccessToken } from './utils.js';
 import { handleRedemption } from './redemptionManager.js';
+import { fetchExternalEmotes } from './emoteManager.js';
 
 let sessionId = '';
 
@@ -69,6 +70,10 @@ async function init() {
                 nudgeSprites();
             }
         }
+
+        if (message.trim().toLowerCase() === '!checkpokemon') {
+            checkPokemonMessage(username);
+        }
     });
 
     // Connect to EventSub
@@ -129,6 +134,9 @@ async function subscribeToRedemptions(token, username, clientId) {
     }
 
     const broadcasterId = userData.data[0].id;
+    
+    // Fetch external emotes (7TV, BTTV)
+    fetchExternalEmotes(broadcasterId);
 
     // B. Register the Redemption Subscription
     const res = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {

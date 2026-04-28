@@ -84,37 +84,67 @@ export async function parseAndPreloadEmotes(message, emotes) {
              .replace(/'/g, "&#039;");
     };
 
-    const isSingleWord = !emotes && message.trim().split(/\s+/).length === 1;
-
-    if (!emotes) {
-        return escapeHtml(isSingleWord ? truncateText(message) : message);
-    }
-    
     let replacements = [];
-    for (const [id, positions] of Object.entries(emotes)) {
-        for (const pos of positions) {
-            const [start, end] = pos.split('-').map(Number);
-            replacements.push({ start, end, id });
+
+    // 1. Add Twitch Emotes
+    if (emotes) {
+        for (const [id, positions] of Object.entries(emotes)) {
+            for (const pos of positions) {
+                const [start, end] = pos.split('-').map(Number);
+                replacements.push({ 
+                    start, 
+                    end, 
+                    html: `<img src="https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/1.0" alt="emote" />` 
+                });
+            }
         }
     }
-    
-    // Sort forwards to slice the string accurately
+
+    // 2. Add External Emotes (7TV, BTTV)
+    // We only check for external emotes if the word isn't already part of a Twitch emote
+    if (state.externalEmotes.size > 0) {
+        const wordMatches = message.matchAll(/\S+/g);
+        for (const match of wordMatches) {
+            const word = match[0];
+            const start = match.index;
+            const end = start + word.length - 1;
+
+            // Check if this range overlaps with any Twitch emote
+            const isOverlap = replacements.some(r => (start <= r.end && end >= r.start));
+            if (!isOverlap) {
+                const external = state.externalEmotes.get(word);
+                if (external) {
+                    replacements.push({
+                        start,
+                        end,
+                        html: `<img src="${external.url}" alt="${word}" class="external-emote" />`
+                    });
+                }
+            }
+        }
+    }
+
+    // 3. Apply all replacements
+    if (replacements.length === 0) {
+        const isSingleWord = message.trim().split(/\s+/).length === 1;
+        return escapeHtml(isSingleWord ? truncateText(message) : message);
+    }
+
     replacements.sort((a, b) => a.start - b.start);
-    
+
     let parsedMessage = '';
     let lastIndex = 0;
-    
+
     for (const r of replacements) {
-        // Append escaped text before the emote (no truncation here since emotes imply > 1 word or mixed content)
+        // Append escaped text before the emote
         parsedMessage += escapeHtml(message.substring(lastIndex, r.start));
         // Append the img tag
-        const url = `https://static-cdn.jtvnw.net/emoticons/v2/${r.id}/default/dark/1.0`;
-        parsedMessage += `<img src="${url}" alt="emote" />`;
+        parsedMessage += r.html;
         lastIndex = r.end + 1;
     }
     // Append remaining escaped text
     parsedMessage += escapeHtml(message.substring(lastIndex));
-    
+
     return parsedMessage;
 }
 

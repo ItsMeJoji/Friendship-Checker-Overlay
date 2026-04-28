@@ -5,6 +5,25 @@ import { getPokemonSpritePath, loadAndCropImage, parseAndPreloadEmotes } from '.
 import { saveUserPokemonData, capitalizeAllWords } from './utils.js';
 import { savePokemonToCloud, loadPokemonFromCloud } from './firebaseStorage.js';
 
+export function checkPokemonMessage(username) {
+    const p = state.pokemon.find(p => p.username === username);
+    if (p) {
+        const cleanName = p.pokemonName.replace('-s', '').replace(/-/g, ' ');
+        const isShiny = p.pokemonName.includes('-s');
+        const displayMessage = `I am ${isShiny ? 'a ✨ Shiny ' : 'a '}${capitalizeAllWords(cleanName)}!`;
+        
+        p.messageTimer = Date.now() + 5000;
+        if (!p.msgElement) {
+            const msg = document.createElement('div');
+            msg.className = 'pokemon-message';
+            document.getElementById('container').appendChild(msg);
+            p.msgElement = msg;
+        }
+        p.msgElement.innerHTML = displayMessage;
+        p.msgElement.style.display = 'block';
+    }
+}
+
 export function getRandomPokemon() {
     return availablePokemon[Math.floor(Math.random() * availablePokemon.length)];
 }
