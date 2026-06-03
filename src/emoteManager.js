@@ -69,8 +69,7 @@ async function fetchBTTVChannelEmotes(broadcasterId) {
 
 async function fetch7TVGlobalEmotes() {
     try {
-        // 7TV Global Emote Set ID
-        const response = await fetch('https://7tv.io/v3/emote-sets/60686c2d106606680456c382', { mode: 'cors' });
+        const response = await fetch('https://7tv.io/v3/emote-sets/global', { mode: 'cors' });
         if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
         const data = await response.json();
@@ -78,7 +77,7 @@ async function fetch7TVGlobalEmotes() {
             console.log(`7TV Global: Found ${data.emotes.length} emotes.`);
             data.emotes.forEach(emote => {
                 state.externalEmotes.set(emote.name, {
-                    url: `https:${emote.data.host.url}/1x.webp`,
+                    url: get7TVEmoteUrl(emote),
                     provider: '7tv'
                 });
             });
@@ -100,7 +99,7 @@ async function fetch7TVChannelEmotes(broadcasterId) {
             console.log(`7TV Channel: Found ${data.emote_set.emotes.length} emotes.`);
             data.emote_set.emotes.forEach(emote => {
                 state.externalEmotes.set(emote.name, {
-                    url: `https:${emote.data.host.url}/1x.webp`,
+                    url: get7TVEmoteUrl(emote),
                     provider: '7tv'
                 });
             });
@@ -110,4 +109,11 @@ async function fetch7TVChannelEmotes(broadcasterId) {
     } catch (e) {
         console.error('Failed to fetch 7TV Channel emotes:', e);
     }
+}
+
+function get7TVEmoteUrl(emote) {
+    const hostUrl = emote?.data?.host?.url;
+    if (!hostUrl) return '';
+
+    return `${hostUrl.startsWith('//') ? 'https:' : ''}${hostUrl}/1x.webp`;
 }
