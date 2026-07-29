@@ -34,6 +34,10 @@ async function init() {
         return;
     }
 
+    const obsUrl = `${window.location.origin}${window.location.pathname}#access_token=${token}&username=${CONFIG.username}`;
+    console.log("COPY THIS INTO OBS BROWSER SOURCE:");
+    console.log(obsUrl);
+
     // Connect to Twitch
     state.client = new tmi.Client({
         options: { debug: true, skipUpdatingEmotesets: true },
