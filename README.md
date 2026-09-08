@@ -31,9 +31,21 @@ To enable interactivity, create rewards with these **exact** titles:
 
 ## 🛠 Commands
 
+### Twitch Chat Commands
+
+- `!checkpokemon`: Displays your active Pokémon's name and shiny status in a speech bubble.
+- `!jump`: (Parade Mode) Makes your active Pokémon jump.
 - `!spawn`: (Broadcaster only) Spawns a random test Pokémon.
 - `!reset`: (Broadcaster only) Clears all Pokémon from the screen.
-- `!nudge`: (Broadcaster only) Resets all Pokémon back to their base speed.
+- `!nudge`: (Broadcaster only, Classic Mode) Resets all Pokémon back to their base speed.
+- `!dynamax`: (Broadcaster only) Manually triggers the Dynamax effect for the broadcaster.
+- `!speed`: (Broadcaster only) Manually triggers the X-Speed effect for the broadcaster.
+
+### Development Commands
+
+- `npm run dev`: Starts the local Vite development server.
+- `npm run build`: Builds the production bundle to `dist/`.
+- `npm run preview`: Previews the production build locally.
 
 ## 📦 Project Structure
 
