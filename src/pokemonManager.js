@@ -149,6 +149,11 @@ export async function addPokemon(chatter, initialMessage = '', options = {}) {
         }
         document.getElementById('container').appendChild(msgElement);
 
+        const dirX = Math.random() < 0.5 ? -1 : 1;
+        const dirY = Math.random() < 0.5 ? -1 : 1;
+        const vx = dirX * (3.0 + Math.random() * 2.0);
+        const vy = dirY * (2.0 + Math.random() * 2.0);
+
         state.pokemon.push({
             id: Date.now() + Math.random(),
             username: username,
@@ -156,12 +161,13 @@ export async function addPokemon(chatter, initialMessage = '', options = {}) {
             img: img,
             x: Math.random() * (CONFIG.canvasWidth - (img.width * 0.5)),
             y: Math.random() * (CONFIG.canvasHeight - (img.height * 0.5)),
-            vx: (Math.random() - 0.5) * 4,
-            vy: (Math.random() - 0.5) * 4,
+            vx: vx,
+            vy: vy,
             speedMultiplier: 1,
             currentScale: 1,
             targetScale: 1,
             isDynamaxed: false,
+            animOffset: Math.random() * Math.PI * 2,
             msgElement: msgElement,
             messageTimer: messageTimer
         });

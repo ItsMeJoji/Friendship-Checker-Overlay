@@ -15,13 +15,13 @@ export function update() {
         // Position on a singular plane at the bottom
         // We leave space for the name (approx 50px) and some bottom padding
         const groundY = CONFIG.canvasHeight - height - 100;
-        
+
         // Jump Physics
         if (p.jumpVy === undefined) p.jumpVy = 0;
 
         // Start them on ground if they are spawned too low or first time setup
         if (p.y === undefined || p.y > groundY + 50 || p.y < -100) {
-             p.y = groundY;
+            p.y = groundY;
         }
 
         p.jumpVy += 0.8; // Gravity
@@ -35,6 +35,12 @@ export function update() {
 
         const isMessaging = Date.now() < p.messageTimer;
         const speedMult = p.speedMultiplier || 1;
+
+        // Ensure a healthy walking speed in parade mode (3.0 - 4.5 px/frame)
+        if (!p.vx || Math.abs(p.vx) < 2.5) {
+            p.vx = (p.vx && p.vx < 0 ? -1 : 1) * (3.0 + Math.random() * 1.5);
+        }
+
         p.x += p.vx * speedMult;
 
         // Bounce edges
@@ -60,20 +66,30 @@ export function update() {
 export function draw() {
     state.ctx.clearRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
 
+    const now = Date.now();
+
     state.pokemon.forEach(p => {
         const scale = p.currentScale !== undefined ? p.currentScale : 1;
         const w = p.img.width * scale;
         const h = p.img.height * scale;
 
-        // Draw Image (flipped based on velocity)
+        // Animation calculations
+        const animOffset = p.animOffset !== undefined ? p.animOffset : (p.id || 0);
+        const phase = (now * 0.004) + animOffset;
+        const wobbleAngle = Math.sin(phase) * (5 * Math.PI / 180);
+        const bounceY = (Math.sin(phase * 2) - 1) * 2;
+
+        const centerX = p.x + w / 2;
+        const centerY = p.y + h / 2 + bounceY;
+
+        // Draw Image (flipped based on velocity with wobble and bounce)
         state.ctx.save();
+        state.ctx.translate(centerX, centerY);
         if (p.vx > 0) {
-            state.ctx.translate(p.x + w, p.y);
             state.ctx.scale(-1, 1);
-            state.ctx.drawImage(p.img, 0, 0, w, h);
-        } else {
-            state.ctx.drawImage(p.img, p.x, p.y, w, h);
         }
+        state.ctx.rotate(wobbleAngle);
+        state.ctx.drawImage(p.img, -w / 2, -h / 2, w, h);
         state.ctx.restore();
 
         // Draw Username
@@ -82,10 +98,10 @@ export function draw() {
         state.ctx.textAlign = "center";
         state.ctx.strokeStyle = "black";
         state.ctx.lineWidth = 4;
-        
+
         const textX = p.x + w / 2;
         const textY = p.y + h + 25; // Closer to the sprite, matching main overlay
-        
+
         state.ctx.strokeText(p.username, textX, textY);
         state.ctx.fillText(p.username, textX, textY);
     });

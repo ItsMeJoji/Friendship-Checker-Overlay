@@ -75,20 +75,30 @@ export function update() {
 export function draw() {
     state.ctx.clearRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
 
+    const now = Date.now();
+
     state.pokemon.forEach(p => {
         const scale = p.currentScale !== undefined ? p.currentScale : 1;
         const w = p.img.width * scale;
         const h = p.img.height * scale;
 
-        // Draw Image (flipped based on velocity)
+        // Animation calculations
+        const animOffset = p.animOffset !== undefined ? p.animOffset : (p.id || 0);
+        const phase = (now * 0.004) + animOffset;
+        const wobbleAngle = Math.sin(phase) * (5 * Math.PI / 180);
+        const bounceY = (Math.sin(phase * 2) - 1) * 2;
+
+        const centerX = p.x + w / 2;
+        const centerY = p.y + h / 2 + bounceY;
+
+        // Draw Image (flipped based on velocity with wobble and bounce)
         state.ctx.save();
+        state.ctx.translate(centerX, centerY);
         if (p.vx > 0) {
-            state.ctx.translate(p.x + w, p.y);
             state.ctx.scale(-1, 1);
-            state.ctx.drawImage(p.img, 0, 0, w, h);
-        } else {
-            state.ctx.drawImage(p.img, p.x, p.y, w, h);
         }
+        state.ctx.rotate(wobbleAngle);
+        state.ctx.drawImage(p.img, -w / 2, -h / 2, w, h);
         state.ctx.restore();
 
         // Draw Username
