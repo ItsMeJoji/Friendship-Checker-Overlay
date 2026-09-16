@@ -19,8 +19,8 @@ export function update() {
         // Jump Physics
         if (p.jumpVy === undefined) p.jumpVy = 0;
 
-        // Start them on ground if they are spawned too low or first time setup
-        if (p.y === undefined || p.y > groundY + 50 || p.y < -100) {
+        // Start them on ground if first time setup or off-ground when not jumping
+        if (p.y === undefined || (p.jumpVy === 0 && Math.abs(p.y - groundY) > 20)) {
             p.y = groundY;
         }
 
@@ -36,9 +36,9 @@ export function update() {
         const isMessaging = Date.now() < p.messageTimer;
         const speedMult = p.speedMultiplier || 1;
 
-        // Ensure a healthy walking speed in parade mode (3.0 - 4.5 px/frame)
-        if (!p.vx || Math.abs(p.vx) < 2.5) {
-            p.vx = (p.vx && p.vx < 0 ? -1 : 1) * (3.0 + Math.random() * 1.5);
+        // Ensure a natural walking speed in parade mode (1.2 - 1.8 px/frame)
+        if (!p.vx || Math.abs(p.vx) > 2.5 || Math.abs(p.vx) < 0.8) {
+            p.vx = (p.vx && p.vx < 0 ? -1 : 1) * (1.2 + Math.random() * 0.6);
         }
 
         p.x += p.vx * speedMult;

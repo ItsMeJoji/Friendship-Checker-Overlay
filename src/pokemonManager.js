@@ -52,8 +52,8 @@ export async function addPokemon(chatter, initialMessage = '', options = {}) {
 
     let displayMessage = initialMessage;
     
-    // Filter out commands (starts with ! and is the only word)
-    if (displayMessage.trim().startsWith('!') && !displayMessage.trim().includes(' ')) {
+    // Filter out commands starting with !
+    if (displayMessage.trim().startsWith('!')) {
         displayMessage = "";
     }
 
@@ -149,10 +149,10 @@ export async function addPokemon(chatter, initialMessage = '', options = {}) {
         }
         document.getElementById('container').appendChild(msgElement);
 
-        const dirX = Math.random() < 0.5 ? -1 : 1;
-        const dirY = Math.random() < 0.5 ? -1 : 1;
-        const vx = dirX * (3.0 + Math.random() * 2.0);
-        const vy = dirY * (2.0 + Math.random() * 2.0);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = CONFIG.baseSpeed || 1.5;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
 
         state.pokemon.push({
             id: Date.now() + Math.random(),

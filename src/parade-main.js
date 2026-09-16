@@ -53,23 +53,26 @@ async function init() {
 
         addPokemon(chatter, message);
 
-        if (message.trim() === '!jump') {
+        const cleanCmd = message.trim().toLowerCase().split(/\s+/)[0];
+
+        if (cleanCmd === '!jump') {
             const p = state.pokemon.find(p => p.username === username);
             if (p) {
-                // Determine if they are close to the ground to allow jumping
+                // Determine if they are close to the ground (or jumpVy is 0) to allow jumping
                 const scale = p.currentScale || 1;
-                const height = p.img.height * scale;
+                const height = (p.img ? p.img.height : 100) * scale;
                 const groundY = CONFIG.canvasHeight - height - 100;
 
-                // Allow jump if they are within 10 pixels of the ground (or exactly on it)
-                if (Math.abs(p.y - groundY) <= 10) {
+                // Allow jump if on ground, jumpVy is 0, or within 25px of the ground plane
+                const isNearGround = (p.jumpVy === 0 || p.jumpVy === undefined) || Math.abs(p.y - groundY) <= 25;
+                if (isNearGround) {
                     const roll = Math.random();
                     if (roll < 0.01) {
                         p.jumpVy = -35;
                     } else if (roll < 0.11) {
-                        p.jumpVy = -20;
+                        p.jumpVy = -22;
                     } else {
-                        p.jumpVy = -10;
+                        p.jumpVy = -13;
                     }
                 }
             }

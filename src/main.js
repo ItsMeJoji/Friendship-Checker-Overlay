@@ -56,6 +56,17 @@ async function init() {
         // This now handles both initial spawn and message updates
         addPokemon(chatter, message);
 
+        const cleanCmd = message.trim().toLowerCase().split(/\s+/)[0];
+
+        if (cleanCmd === '!jump') {
+            const p = state.pokemon.find(p => p.username === username);
+            if (p) {
+                const currentSpeed = Math.hypot(p.vx, p.vy) || CONFIG.baseSpeed;
+                p.vy = -Math.abs(p.vy || 1) - 4;
+                p.vx = (p.vx >= 0 ? 1 : -1) * currentSpeed;
+            }
+        }
+
         // Commands
         if (username === 'itsmejoji') {
             if (message.trim() === '!spawn') spawnTestPokemon();
@@ -71,7 +82,7 @@ async function init() {
             }
         }
 
-        if (message.trim().toLowerCase() === '!checkpokemon') {
+        if (cleanCmd === '!checkpokemon') {
             checkPokemonMessage(username);
         }
     });

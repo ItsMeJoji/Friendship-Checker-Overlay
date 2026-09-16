@@ -8,7 +8,7 @@ export function getUrlParameter(name) {
 export const CONFIG = {
     canvasWidth: 1920,
     canvasHeight: 1080,
-    baseSpeed: 2,
+    baseSpeed: 1.5,
     speedAdjust: 1,
     padding: 50,
     collisionSize: 60,
