@@ -2,10 +2,11 @@ import tmi from 'tmi.js';
 import { state } from './state.js';
 import { CONFIG, getUrlParameter } from './config.js';
 import { addPokemon, spawnTestPokemon, resetOverlay, checkPokemonMessage } from './pokemonManager.js';
-import { loop } from './parade-renderer.js';
+import { loop, PARADE_BOTTOM_OFFSET } from './parade-renderer.js';
 import { retrieveAccessToken, authTwitch, getAccessTokenFromUrl, storeAccessToken } from './utils.js';
 import { handleRedemption } from './redemptionManager.js';
 import { fetchExternalEmotes } from './emoteManager.js';
+import { saveStreamerConfig, loadStreamerConfig } from './firebaseStorage.js';
 
 let sessionId = '';
 
@@ -16,26 +17,50 @@ async function init() {
     state.bufferCtx = state.bufferCanvas.getContext('2d');
 
     const username = CONFIG.username;
-    const clientId = CONFIG.client_id;
+    let clientId = CONFIG.client_id;
     const redirectUri = window.location.origin + window.location.pathname;
 
     let token = getAccessTokenFromUrl();
 
     if (token) {
         storeAccessToken(token);
+        if (username) {
+            await saveStreamerConfig(username, { token, clientId: clientId || undefined });
+        }
         window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
     } else {
         token = retrieveAccessToken();
+        if (token && username) {
+            saveStreamerConfig(username, { token, clientId: clientId || undefined });
+        }
+    }
+
+    // If no token locally (e.g. running in an OBS browser source), load from Firebase
+    if (!token && username) {
+        const cloudConfig = await loadStreamerConfig(username);
+        if (cloudConfig?.token) {
+            token = cloudConfig.token;
+            clientId = clientId || cloudConfig.clientId;
+            if (clientId && !CONFIG.client_id) {
+                CONFIG.client_id = clientId;
+            }
+            storeAccessToken(token);
+            console.log(`[Firebase] Loaded saved Twitch credentials for ${username}`);
+        }
     }
 
     if (!token) {
+        if (!clientId) {
+            console.error("Missing clientId or stored credentials to authenticate with Twitch.");
+            return;
+        }
         console.log("No token found, redirecting to Twitch...");
         authTwitch(clientId, redirectUri);
         return;
     }
 
-    const obsUrl = `${window.location.origin}${window.location.pathname}#access_token=${token}&username=${CONFIG.username}`;
-    console.log("COPY THIS INTO OBS BROWSER SOURCE:");
+    const obsUrl = `${window.location.origin}${window.location.pathname}?username=${CONFIG.username}`;
+    console.log("OBS BROWSER SOURCE URL (token synced via cloud):");
     console.log(obsUrl);
 
     // Connect to Twitch
@@ -61,7 +86,7 @@ async function init() {
                 // Determine if they are close to the ground (or jumpVy is 0) to allow jumping
                 const scale = p.currentScale || 1;
                 const height = (p.img ? p.img.height : 100) * scale;
-                const groundY = CONFIG.canvasHeight - height - 100;
+                const groundY = CONFIG.canvasHeight - height - PARADE_BOTTOM_OFFSET;
 
                 // Allow jump if on ground, jumpVy is 0, or within 25px of the ground plane
                 const isNearGround = (p.jumpVy === 0 || p.jumpVy === undefined) || Math.abs(p.y - groundY) <= 25;

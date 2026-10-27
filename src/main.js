@@ -6,6 +6,7 @@ import { loop, nudgeSprites } from './renderer.js';
 import { retrieveAccessToken, authTwitch, getAccessTokenFromUrl, storeAccessToken } from './utils.js';
 import { handleRedemption } from './redemptionManager.js';
 import { fetchExternalEmotes } from './emoteManager.js';
+import { saveStreamerConfig, loadStreamerConfig } from './firebaseStorage.js';
 
 let sessionId = '';
 
@@ -16,28 +17,51 @@ async function init() {
     state.bufferCtx = state.bufferCanvas.getContext('2d');
 
     const username = CONFIG.username;
-    const clientId = CONFIG.client_id;
+    let clientId = CONFIG.client_id;
     const redirectUri = window.location.origin + window.location.pathname;
 
     let token = getAccessTokenFromUrl();
 
     if (token) {
         storeAccessToken(token);
-
+        if (username) {
+            await saveStreamerConfig(username, { token, clientId: clientId || undefined });
+        }
         window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
     } else {
         token = retrieveAccessToken();
+        if (token && username) {
+            saveStreamerConfig(username, { token, clientId: clientId || undefined });
+        }
     }
 
-    // 3. ONLY redirect if we have absolutely no token at all
+    // If no token locally (e.g. running in an OBS browser source), load from Firebase
+    if (!token && username) {
+        const cloudConfig = await loadStreamerConfig(username);
+        if (cloudConfig?.token) {
+            token = cloudConfig.token;
+            clientId = clientId || cloudConfig.clientId;
+            if (clientId && !CONFIG.client_id) {
+                CONFIG.client_id = clientId;
+            }
+            storeAccessToken(token);
+            console.log(`[Firebase] Loaded saved Twitch credentials for ${username}`);
+        }
+    }
+
+    // Only redirect if we have no token at all
     if (!token) {
+        if (!clientId) {
+            console.error("Missing clientId or stored credentials to authenticate with Twitch.");
+            return;
+        }
         console.log("No token found, redirecting to Twitch...");
         authTwitch(clientId, redirectUri);
         return;
     }
 
-    const obsUrl = `${window.location.origin}${window.location.pathname}#access_token=${token}&username=${CONFIG.username}`;
-    console.log("COPY THIS INTO OBS BROWSER SOURCE:");
+    const obsUrl = `${window.location.origin}${window.location.pathname}?username=${CONFIG.username}`;
+    console.log("OBS BROWSER SOURCE URL (token synced via cloud):");
     console.log(obsUrl);
 
     // Connect to Twitch

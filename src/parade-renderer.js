@@ -1,6 +1,20 @@
 import { state } from './state.js';
 import { CONFIG } from './config.js';
 
+// --- Parade Configuration Settings ---
+// Distance from the bottom of the 1080 canvas to the bottom of the sprite.
+// 45px leaves space for the 20px username text + stroke + bottom padding.
+export const PARADE_BOTTOM_OFFSET = 45;
+
+// Hopping animation settings
+export const HOP_SPEED = 0.010;   // Cadence of the hop (higher = faster hops)
+export const DYNAMAX_HOP_SPEED_MULTIPLIER = 0.5; // Multiplier when Dynamaxed (0.5 = half speed)
+export const HOP_HEIGHT = 8;      // Maximum height of each hop in pixels
+
+// Walking horizontal speed range (pixels per frame)
+export const WALK_SPEED_MIN = 1.2;
+export const WALK_SPEED_MAX = 1.8;
+
 export function update() {
     state.pokemon.forEach((p) => {
         // Animate scale
@@ -13,32 +27,39 @@ export function update() {
         const height = p.img.height * scale;
 
         // Position on a singular plane at the bottom
-        // We leave space for the name (approx 50px) and some bottom padding
-        const groundY = CONFIG.canvasHeight - height - 100;
+        const groundY = CONFIG.canvasHeight - height - PARADE_BOTTOM_OFFSET;
 
-        // Jump Physics
+        // Jump & Drop Physics
         if (p.jumpVy === undefined) p.jumpVy = 0;
 
-        // Start them on ground if first time setup or off-ground when not jumping
-        if (p.y === undefined || (p.jumpVy === 0 && Math.abs(p.y - groundY) > 20)) {
-            p.y = groundY;
+        // Initial spawn drop: start above the screen so they drop in from the top
+        if (!p.spawnInitialized) {
+            p.spawnInitialized = true;
+            p.hasLanded = false;
+            p.y = -height - 20;
+            p.jumpVy = 0;
         }
 
-        p.jumpVy += 0.8; // Gravity
+        // Apply gravity
+        p.jumpVy += 0.8;
         p.y += p.jumpVy;
 
-        // Floor collision
+        // Floor collision & grounding
         if (p.y >= groundY) {
             p.y = groundY;
             p.jumpVy = 0;
+            p.hasLanded = true;
+        } else if (p.hasLanded && p.jumpVy === 0) {
+            // Keep anchored to the ground once landed if not jumping (e.g. during scale changes)
+            p.y = groundY;
         }
 
         const isMessaging = Date.now() < p.messageTimer;
         const speedMult = p.speedMultiplier || 1;
 
-        // Ensure a natural walking speed in parade mode (1.2 - 1.8 px/frame)
-        if (!p.vx || Math.abs(p.vx) > 2.5 || Math.abs(p.vx) < 0.8) {
-            p.vx = (p.vx && p.vx < 0 ? -1 : 1) * (1.2 + Math.random() * 0.6);
+        // Ensure a natural walking speed in parade mode (horizontal movement)
+        if (!p.vx || Math.abs(p.vx) > (WALK_SPEED_MAX + 0.7) || Math.abs(p.vx) < (WALK_SPEED_MIN - 0.4)) {
+            p.vx = (p.vx && p.vx < 0 ? -1 : 1) * (WALK_SPEED_MIN + Math.random() * (WALK_SPEED_MAX - WALK_SPEED_MIN));
         }
 
         p.x += p.vx * speedMult;
@@ -73,22 +94,25 @@ export function draw() {
         const w = p.img.width * scale;
         const h = p.img.height * scale;
 
-        // Animation calculations
+        // Hopping animation: quick vertical hop while walking on the ground
         const animOffset = p.animOffset !== undefined ? p.animOffset : (p.id || 0);
-        const phase = (now * 0.004) + animOffset;
-        const wobbleAngle = Math.sin(phase) * (5 * Math.PI / 180);
-        const bounceY = (Math.sin(phase * 2) - 1) * 2;
+        const isDynamax = p.isDynamaxed || (p.targetScale && p.targetScale > 1);
+        const currentHopSpeed = isDynamax ? (HOP_SPEED * DYNAMAX_HOP_SPEED_MULTIPLIER) : HOP_SPEED;
+        const hopPhase = (now * currentHopSpeed) + animOffset;
+
+        const groundY = CONFIG.canvasHeight - h - PARADE_BOTTOM_OFFSET;
+        const isGrounded = p.hasLanded && Math.abs(p.jumpVy) < 0.1 && Math.abs(p.y - groundY) <= 2;
+        const hopY = isGrounded ? -Math.abs(Math.sin(hopPhase)) * HOP_HEIGHT : 0;
 
         const centerX = p.x + w / 2;
-        const centerY = p.y + h / 2 + bounceY;
+        const centerY = p.y + h / 2 + hopY;
 
-        // Draw Image (flipped based on velocity with wobble and bounce)
+        // Draw Image (flipped horizontally based on velocity direction)
         state.ctx.save();
         state.ctx.translate(centerX, centerY);
         if (p.vx > 0) {
             state.ctx.scale(-1, 1);
         }
-        state.ctx.rotate(wobbleAngle);
         state.ctx.drawImage(p.img, -w / 2, -h / 2, w, h);
         state.ctx.restore();
 
@@ -100,7 +124,7 @@ export function draw() {
         state.ctx.lineWidth = 4;
 
         const textX = p.x + w / 2;
-        const textY = p.y + h + 25; // Closer to the sprite, matching main overlay
+        const textY = p.y + h + 24; // Positioned right below sprite, leaving space before container bottom
 
         state.ctx.strokeText(p.username, textX, textY);
         state.ctx.fillText(p.username, textX, textY);

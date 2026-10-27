@@ -36,6 +36,7 @@ export function handleRedemption(eventData) {
                     clearTimeout(pokemon.dynamaxTimeoutId);
                 }
 
+                pokemon.isDynamaxed = true;
                 pokemon.targetScale = 3;
                 const duration = CONFIG.dynamaxDuration || 60000;
                 pokemon.messageTimer = Date.now() + 5000; // Reset to 5 seconds
@@ -68,6 +69,7 @@ export function handleRedemption(eventData) {
 
                 pokemon.dynamaxTimeoutId = setTimeout(() => {
                     pokemon.targetScale = 1;
+                    pokemon.isDynamaxed = false;
                     if (pokemon.originalImg) {
                         pokemon.img = pokemon.originalImg;
                         pokemon.originalImg = null;

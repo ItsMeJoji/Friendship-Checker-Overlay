@@ -343,9 +343,9 @@
 
         <section class="grid" aria-label="Setup instructions">
             <article class="card">
-                <h2>1. Prepare the overlay URL</h2>
+                <h2>1. Connect & Authorize Twitch</h2>
                 <p>
-                    Enter your Twitch channel name and Twitch Client ID below to generate a ready-to-use overlay link.
+                    Enter your Twitch channel name and Client ID. Authorizing once saves your credentials securely to your cloud profile so OBS never needs complex tokens.
                 </p>
                 <div class="generator">
                     <div class="field-grid">
@@ -369,45 +369,41 @@
                     </div>
                     <div class="field" style="margin-top: 12px; margin-bottom: 8px;">
                         <label class="label-row" style="cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; color: var(--muted);">
-                            <input id="paradeToggle" type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-strong);">
+                            <input id="paradeToggle" type="checkbox" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-strong);">
                             <span>Use Parade Mode (Walking at the bottom)</span>
                         </label>
                     </div>
-                    <div class="button-row">
-                        <button id="generateButton" class="button" type="button">Generate link</button>
+                    <div class="button-row" style="display: flex; gap: 10px;">
+                        <button id="authButton" class="button" type="button" style="background: #9146FF;">Authorize with Twitch</button>
+                        <button id="generateButton" class="button" type="button">Generate OBS Link</button>
                     </div>
                     <div class="output">
-                        <label for="generatedLink">Generated overlay URL</label>
-                        <input id="generatedLink" type="text" readonly value="Fill in the fields above and click Generate link">
+                        <label for="generatedLink">Clean OBS Browser Source URL</label>
+                        <input id="generatedLink" type="text" readonly value="Fill in your channel name and click Generate OBS Link">
                     </div>
                 </div>
             </article>
 
             <article class="card">
-                <h2>2. Sign in to Twitch</h2>
+                <h2>2. One-Time Authorization</h2>
                 <p>
-                    The first time you open the overlay, it sends you to Twitch so you can approve access. The app
-                    requests the scopes it needs to read chat and channel point redemptions.
+                    Clicking <strong>Authorize with Twitch</strong> will open Twitch to approve access for reading chat and channel point redemptions.
                 </p>
                 <div class="callout">
-                    Approve the Twitch prompt when it asks for access. After you authorize, the overlay stores the token
-                    locally in the browser so you do not have to log in again on the same machine.
+                    Once approved, your credentials are automatically synchronized to your cloud configuration. You do <strong>not</strong> need to copy any tokens into OBS!
                 </div>
             </article>
 
             <article class="card full">
-                <h2>3. Use the OBS-ready overlay URL</h2>
+                <h2>3. Use the Clean OBS Overlay URL</h2>
                 <p>
-                    After you sign in, press <strong>F12</strong> to open DevTools and find the browser-source URL in
-                    the console with the access token already attached. Use that final URL in OBS or in whatever tool
-                    is loading the overlay.
+                    Paste the generated clean URL into OBS as a Browser Source (width: 1920, height: 1080).
                 </p>
-                <div class="code">Step flow:
-1. Open the overlay with your `username` and `client_id`.
-2. Let Twitch authenticate the account.
-3. Press F12, open the Console Tab, and copy the final URL the app prints after login.
-4. Paste that URL into OBS as a browser source.
-5. Keep the browser source on the same machine/browser profile that authorized Twitch.</div>
+                <div class="code">Simple Flow:
+1. Enter your Twitch channel name and Client ID above.
+2. Click "Authorize with Twitch" to link your channel.
+3. Copy the Clean OBS URL (e.g., https://your-site/parade/?username=your_channel).
+4. Paste it into an OBS Browser Source. It will automatically load your credentials from the cloud!</div>
             </article>
 
             <article class="card">
@@ -419,15 +415,15 @@
                 <ul class="steps">
                     <li><strong>Broadcaster login:</strong> use the account tied to the live channel.</li>
                     <li><strong>Correct Client ID:</strong> this must match the Twitch app you created.</li>
-                    <li><strong>Same browser profile:</strong> local token storage stays with that browser/device.</li>
+                    <li><strong>Cloud Sync:</strong> credentials load automatically without manual token copying.</li>
                 </ul>
             </article>
 
             <article class="card">
                 <h2>Troubleshooting</h2>
                 <ul class="steps">
-                    <li><strong>Blank overlay:</strong> double-check the `username` and `client_id` values in the URL.</li>
-                    <li><strong>Repeated login prompts:</strong> clear old local storage for the site and authorize again.</li>
+                    <li><strong>Blank overlay:</strong> double-check the `username` in your OBS URL.</li>
+                    <li><strong>Expired tokens:</strong> if redemptions stop responding, click "Authorize with Twitch" here to refresh your cloud credentials.</li>
                     <li><strong>No redemptions:</strong> confirm the channel point reward exists and matches the expected title in the overlay code.</li>
                     <li><strong>Wrong channel:</strong> make sure the Twitch account and channel name belong to the same broadcaster.</li>
                 </ul>
@@ -443,27 +439,62 @@
         const usernameInput = document.getElementById('usernameInput');
         const clientIdInput = document.getElementById('clientIdInput');
         const generateButton = document.getElementById('generateButton');
+        const authButton = document.getElementById('authButton');
         const generatedLink = document.getElementById('generatedLink');
         const paradeToggle = document.getElementById('paradeToggle');
 
+        // Preload stored values if available
+        if (localStorage.getItem('saved_username')) {
+            usernameInput.value = localStorage.getItem('saved_username');
+        }
+        if (localStorage.getItem('saved_client_id')) {
+            clientIdInput.value = localStorage.getItem('saved_client_id');
+        }
+
+        function getTargetPageUrl(includeClientId = false) {
+            const username = usernameInput.value.trim();
+            const clientId = clientIdInput.value.trim();
+
+            if (username) localStorage.setItem('saved_username', username);
+            if (clientId) localStorage.setItem('saved_client_id', clientId);
+
+            const siteRootPath = window.location.pathname.replace(/\/help(?:\/index\.html|\/?)$/, '/');
+            const targetPage = paradeToggle.checked ? 'parade/index.html' : 'index.html';
+            const url = new URL(targetPage, `${window.location.origin}${siteRootPath}`);
+
+            if (username) url.searchParams.set('username', username);
+            if (includeClientId && clientId) url.searchParams.set('client_id', clientId);
+
+            return url.toString();
+        }
+
         function buildOverlayUrl() {
+            const username = usernameInput.value.trim();
+            if (!username) {
+                generatedLink.value = 'Please enter your Twitch channel name.';
+                return;
+            }
+            generatedLink.value = getTargetPageUrl(false);
+        }
+
+        function startAuth() {
             const username = usernameInput.value.trim();
             const clientId = clientIdInput.value.trim();
 
             if (!username || !clientId) {
-                generatedLink.value = 'Please enter both values to generate a link.';
+                alert('Please enter both your Channel Name and Client ID to authorize.');
                 return;
             }
 
-            const siteRootPath = window.location.pathname.replace(/\/help(?:\/index\.html|\/?)$/, '/');
-            const targetPage = paradeToggle.checked ? 'parade/index.html' : 'index.html';
-            const baseUrl = new URL(targetPage, `${window.location.origin}${siteRootPath}`);
-            baseUrl.searchParams.set('username', username);
-            baseUrl.searchParams.set('client_id', clientId);
-            generatedLink.value = baseUrl.toString();
+            // Clear old local token so it prompts for fresh Twitch authorization and syncs
+            localStorage.removeItem('access_token');
+
+            // Redirect to overlay with client_id to trigger Twitch authorization flow
+            window.location.href = getTargetPageUrl(true);
         }
 
         generateButton.addEventListener('click', buildOverlayUrl);
+        authButton.addEventListener('click', startAuth);
 
         [usernameInput, clientIdInput].forEach((input) => {
             input.addEventListener('keydown', (event) => {
