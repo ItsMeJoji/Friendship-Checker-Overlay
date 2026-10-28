@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -89,13 +89,35 @@ export async function saveStreamerConfig(username, config) {
     if (!username) return;
     try {
         await ensureAuth();
-        await set(ref(db, 'configs/' + username.toLowerCase()), {
-            ...config,
-            lastUpdated: Date.now()
-        });
+        const cleanConfig = {};
+        for (const [key, value] of Object.entries(config)) {
+            if (value !== undefined) {
+                cleanConfig[key] = value;
+            }
+        }
+        cleanConfig.lastUpdated = Date.now();
+        await update(ref(db, 'configs/' + username.toLowerCase()), cleanConfig);
         console.log(`[Firebase] Saved streamer configuration for ${username}.`);
     } catch (error) {
         console.error("Firebase Config Save Error:", error);
+    }
+}
+
+/**
+ * Clears an expired or invalid streamer token in the cloud.
+ */
+export async function clearStreamerToken(username) {
+    if (!username) return;
+    try {
+        await ensureAuth();
+        await update(ref(db, 'configs/' + username.toLowerCase()), {
+            token: null,
+            tokenInvalid: true,
+            lastUpdated: Date.now()
+        });
+        console.log(`[Firebase] Cleared invalid token for ${username}.`);
+    } catch (error) {
+        console.error("Firebase Config Clear Error:", error);
     }
 }
 

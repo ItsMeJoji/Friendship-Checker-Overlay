@@ -14,7 +14,7 @@ export const CONFIG = {
     collisionSize: 60,
     dynamaxDuration: 60000,
     username: getUrlParameter('username'), // Store channel name here
-    client_id: getUrlParameter('client_id'),
+    client_id: getUrlParameter('client_id') || localStorage.getItem('saved_client_id') || '',
     specialUsers: {
         'itsmejoji': 'blastoise-s',
         'nightbot': 'porygon-z-s',

@@ -435,7 +435,9 @@
         </p>
     </main>
 
-    <script>
+    <script type="module">
+        import { loadStreamerConfig } from '/src/firebaseStorage.js';
+
         const usernameInput = document.getElementById('usernameInput');
         const clientIdInput = document.getElementById('clientIdInput');
         const generateButton = document.getElementById('generateButton');
@@ -444,19 +446,48 @@
         const paradeToggle = document.getElementById('paradeToggle');
 
         // Preload stored values if available
-        if (localStorage.getItem('saved_username')) {
-            usernameInput.value = localStorage.getItem('saved_username');
+        if (localStorage.getItem('saved_username') || localStorage.getItem('username')) {
+            usernameInput.value = localStorage.getItem('saved_username') || localStorage.getItem('username');
         }
-        if (localStorage.getItem('saved_client_id')) {
-            clientIdInput.value = localStorage.getItem('saved_client_id');
+        if (localStorage.getItem('saved_client_id') || localStorage.getItem('client_id')) {
+            clientIdInput.value = localStorage.getItem('saved_client_id') || localStorage.getItem('client_id');
         }
+
+        // Fetch clientId from Firebase if username is known
+        async function fetchClientIdFromFirebase(username) {
+            if (!username) return;
+            try {
+                const cloudConfig = await loadStreamerConfig(username);
+                if (cloudConfig?.clientId && !clientIdInput.value) {
+                    clientIdInput.value = cloudConfig.clientId;
+                    localStorage.setItem('saved_client_id', cloudConfig.clientId);
+                    localStorage.setItem('client_id', cloudConfig.clientId);
+                }
+            } catch (e) {
+                console.error('Error fetching config from Firebase:', e);
+            }
+        }
+
+        if (usernameInput.value) {
+            fetchClientIdFromFirebase(usernameInput.value.trim());
+        }
+
+        usernameInput.addEventListener('blur', () => {
+            fetchClientIdFromFirebase(usernameInput.value.trim());
+        });
 
         function getTargetPageUrl(includeClientId = false) {
             const username = usernameInput.value.trim();
             const clientId = clientIdInput.value.trim();
 
-            if (username) localStorage.setItem('saved_username', username);
-            if (clientId) localStorage.setItem('saved_client_id', clientId);
+            if (username) {
+                localStorage.setItem('saved_username', username);
+                localStorage.setItem('username', username);
+            }
+            if (clientId) {
+                localStorage.setItem('saved_client_id', clientId);
+                localStorage.setItem('client_id', clientId);
+            }
 
             const siteRootPath = window.location.pathname.replace(/\/help(?:\/index\.html|\/?)$/, '/');
             const targetPage = paradeToggle.checked ? 'parade/index.html' : 'index.html';
@@ -477,20 +508,40 @@
             generatedLink.value = getTargetPageUrl(false);
         }
 
-        function startAuth() {
+        async function startAuth() {
             const username = usernameInput.value.trim();
-            const clientId = clientIdInput.value.trim();
+            let clientId = clientIdInput.value.trim();
 
-            if (!username || !clientId) {
-                alert('Please enter both your Channel Name and Client ID to authorize.');
+            if (!username) {
+                alert('Please enter your Channel Name.');
+                return;
+            }
+
+            // If clientId is empty, try loading it from Firebase before erroring
+            if (!clientId) {
+                const cloudConfig = await loadStreamerConfig(username);
+                if (cloudConfig?.clientId) {
+                    clientId = cloudConfig.clientId;
+                    clientIdInput.value = clientId;
+                }
+            }
+
+            if (!clientId) {
+                alert('Please enter your Client ID to authorize.');
                 return;
             }
 
             // Clear old local token so it prompts for fresh Twitch authorization and syncs
             localStorage.removeItem('access_token');
+            localStorage.setItem('saved_username', username);
+            localStorage.setItem('saved_client_id', clientId);
+            localStorage.setItem('username', username);
+            localStorage.setItem('client_id', clientId);
 
-            // Redirect to overlay with client_id to trigger Twitch authorization flow
-            window.location.href = getTargetPageUrl(true);
+            // Redirect to overlay with client_id AND force_auth=true to trigger Twitch authorization flow
+            const targetUrl = new URL(getTargetPageUrl(true));
+            targetUrl.searchParams.set('force_auth', 'true');
+            window.location.href = targetUrl.toString();
         }
 
         generateButton.addEventListener('click', buildOverlayUrl);

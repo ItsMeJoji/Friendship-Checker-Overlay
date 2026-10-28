@@ -8,128 +8,111 @@ import { getPokemonSpritePath, loadAndCropImage } from './assetsLoader.js';
  * Called from your socket.onmessage in main.js
  */
 export function handleRedemption(eventData) {
-    const rewardTitle = eventData.reward.title;
-    const user = eventData.user_login;
+    if (!eventData) return;
+
+    const rewardTitle = (eventData.reward?.title || '').trim();
+    const user = (eventData.user_login || eventData.user_name || eventData.user || '').toLowerCase();
     const chatter = { user_name: user };
 
     console.log(`[Redemption] ${user} used: ${rewardTitle}`);
 
-    // Map your Twitch Reward Titles to specific actions
-    switch (rewardTitle) {
-        case "Pokemon Overlay Reroll":
-            // Normal spawn
-            addPokemon(chatter, `I redeemed ${rewardTitle}!`, { forceReroll: true });
-            break;
+    const normalizedTitle = rewardTitle.toLowerCase().replace(/!/g, '').trim();
 
-        case "Shiny Pokemon Overlay Reroll":
-            // Force a shiny by appending '-s' to a random or stored name
-            // We'll pass a flag or handle it in a custom way
-            addPokemon(chatter, `I redeemed ${rewardTitle}!`, { forceReroll: true, increaseShinyChance: true });
-            break;
+    if (normalizedTitle.includes('shiny') && (normalizedTitle.includes('reroll') || normalizedTitle.includes('pokemon'))) {
+        addPokemon(chatter, `I redeemed ${rewardTitle}!`, { forceReroll: true, increaseShinyChance: true });
+    } else if (normalizedTitle.includes('reroll')) {
+        addPokemon(chatter, `I redeemed ${rewardTitle}!`, { forceReroll: true });
+    } else if (normalizedTitle === 'dynamax' || normalizedTitle.includes('dynamax') || normalizedTitle.includes('gigantamax')) {
+        console.log(`[Redemption] ${user} used Dynamax!`);
 
-        case "Dynamax!":
-            console.log(`[Redemption] ${user} used Dynamax!`);
-
-            const applyDynamax = async (pokemon) => {
-                // Clear existing timeout if any
-                if (pokemon.dynamaxTimeoutId) {
-                    clearTimeout(pokemon.dynamaxTimeoutId);
-                }
-
-                pokemon.isDynamaxed = true;
-                pokemon.targetScale = 3;
-                const duration = CONFIG.dynamaxDuration || 60000;
-                pokemon.messageTimer = Date.now() + 5000; // Reset to 5 seconds
-
-                if (!pokemon.msgElement) {
-                    pokemon.msgElement = document.createElement('div');
-                    pokemon.msgElement.className = 'pokemon-message';
-                    document.getElementById('container').appendChild(pokemon.msgElement);
-                }
-                pokemon.msgElement.innerHTML = `${user} used Dynamax!`;
-                pokemon.msgElement.style.display = 'block';
-
-                // Load GMAX form if available
-                const baseNameRe = /-gmax$/; // sanity check
-                // Construct the GMAX name
-                const isShiny = pokemon.pokemonName.endsWith('-s');
-                const baseIdentifier = pokemon.pokemonName.replace('-s', '');
-
-                // Construct the potential gmax name
-                let gmaxName = isShiny ? `${baseIdentifier}-gmax-s` : `${baseIdentifier}-gmax`;
-
-                const gmaxPath = getPokemonSpritePath(gmaxName);
-                const gmaxImg = await loadAndCropImage(gmaxName, gmaxPath);
-
-                if (gmaxImg) {
-                    pokemon.originalImg = pokemon.originalImg || pokemon.img;
-                    pokemon.img = gmaxImg;
-                    pokemon.msgElement.innerHTML = `${user} used Gigantamax!`;
-                }
-
-                pokemon.dynamaxTimeoutId = setTimeout(() => {
-                    pokemon.targetScale = 1;
-                    pokemon.isDynamaxed = false;
-                    if (pokemon.originalImg) {
-                        pokemon.img = pokemon.originalImg;
-                        pokemon.originalImg = null;
-                    }
-                    pokemon.dynamaxTimeoutId = null;
-                }, duration);
-            };
-
-            let p = state.pokemon.find(p => p.username === user);
-            if (p) {
-                applyDynamax(p);
-            } else {
-                addPokemon(chatter, "DYNAMAX POWER!").then(() => {
-                    let newP = state.pokemon.find(p => p.username === user);
-                    if (newP) applyDynamax(newP);
-                });
+        const applyDynamax = async (pokemon) => {
+            if (pokemon.dynamaxTimeoutId) {
+                clearTimeout(pokemon.dynamaxTimeoutId);
             }
-            break;
 
-        case "X-Speed!":
-            console.log(`[Redemption] ${user} used X-Speed!`);
+            pokemon.isDynamaxed = true;
+            pokemon.targetScale = 3;
+            const duration = CONFIG.dynamaxDuration || 60000;
+            pokemon.messageTimer = Date.now() + 5000;
 
-            const applySpeed = (pokemon) => {
-                // Clear existing timeout if any
-                if (pokemon.speedTimeoutId) {
-                    clearTimeout(pokemon.speedTimeoutId);
-                }
-
-                pokemon.speedMultiplier = 5.0; // 5x speed
-                pokemon.messageTimer = Date.now() + 5000; // Reset to 5 seconds
-
-                if (!pokemon.msgElement) {
-                    pokemon.msgElement = document.createElement('div');
-                    pokemon.msgElement.className = 'pokemon-message';
-                    document.getElementById('container').appendChild(pokemon.msgElement);
-                }
-                pokemon.msgElement.innerHTML = `${user} used an X-Speed!`;
-                pokemon.msgElement.style.display = 'block';
-
-                pokemon.speedTimeoutId = setTimeout(() => {
-                    pokemon.speedMultiplier = 1;
-                    pokemon.speedTimeoutId = null;
-                }, 60000);
-            };
-
-            let px = state.pokemon.find(p => p.username === user);
-            if (px) {
-                applySpeed(px);
-            } else {
-                addPokemon(chatter, "X-SPEED!").then(() => {
-                    let newPx = state.pokemon.find(p => p.username === user);
-                    if (newPx) applySpeed(newPx);
-                });
+            if (!pokemon.msgElement) {
+                pokemon.msgElement = document.createElement('div');
+                pokemon.msgElement.className = 'pokemon-message';
+                document.getElementById('container').appendChild(pokemon.msgElement);
             }
-            break;
+            pokemon.msgElement.innerHTML = `${user} used Dynamax!`;
+            pokemon.msgElement.style.display = 'block';
 
-        default:
-            // Fallback for any other reward: just show the message
-            addPokemon(chatter, `Redeemed: ${rewardTitle}`);
-            break;
+            // Load GMAX form if available
+            const isShiny = pokemon.pokemonName.endsWith('-s');
+            const baseIdentifier = pokemon.pokemonName.replace('-s', '');
+            let gmaxName = isShiny ? `${baseIdentifier}-gmax-s` : `${baseIdentifier}-gmax`;
+
+            const gmaxPath = getPokemonSpritePath(gmaxName);
+            const gmaxImg = await loadAndCropImage(gmaxName, gmaxPath);
+
+            if (gmaxImg) {
+                pokemon.originalImg = pokemon.originalImg || pokemon.img;
+                pokemon.img = gmaxImg;
+                pokemon.msgElement.innerHTML = `${user} used Gigantamax!`;
+            }
+
+            pokemon.dynamaxTimeoutId = setTimeout(() => {
+                pokemon.targetScale = 1;
+                pokemon.isDynamaxed = false;
+                if (pokemon.originalImg) {
+                    pokemon.img = pokemon.originalImg;
+                    pokemon.originalImg = null;
+                }
+                pokemon.dynamaxTimeoutId = null;
+            }, duration);
+        };
+
+        let p = state.pokemon.find(p => p.username.toLowerCase() === user);
+        if (p) {
+            applyDynamax(p);
+        } else {
+            addPokemon(chatter, "DYNAMAX POWER!").then(() => {
+                let newP = state.pokemon.find(p => p.username.toLowerCase() === user);
+                if (newP) applyDynamax(newP);
+            });
+        }
+    } else if (normalizedTitle === 'x-speed' || normalizedTitle === 'xspeed' || normalizedTitle.includes('speed')) {
+        console.log(`[Redemption] ${user} used X-Speed!`);
+
+        const applySpeed = (pokemon) => {
+            if (pokemon.speedTimeoutId) {
+                clearTimeout(pokemon.speedTimeoutId);
+            }
+
+            pokemon.speedMultiplier = 5.0; // 5x speed
+            pokemon.messageTimer = Date.now() + 5000;
+
+            if (!pokemon.msgElement) {
+                pokemon.msgElement = document.createElement('div');
+                pokemon.msgElement.className = 'pokemon-message';
+                document.getElementById('container').appendChild(pokemon.msgElement);
+            }
+            pokemon.msgElement.innerHTML = `${user} used an X-Speed!`;
+            pokemon.msgElement.style.display = 'block';
+
+            pokemon.speedTimeoutId = setTimeout(() => {
+                pokemon.speedMultiplier = 1;
+                pokemon.speedTimeoutId = null;
+            }, 60000);
+        };
+
+        let px = state.pokemon.find(p => p.username.toLowerCase() === user);
+        if (px) {
+            applySpeed(px);
+        } else {
+            addPokemon(chatter, "X-SPEED!").then(() => {
+                let newPx = state.pokemon.find(p => p.username.toLowerCase() === user);
+                if (newPx) applySpeed(newPx);
+            });
+        }
+    } else {
+        addPokemon(chatter, `Redeemed: ${rewardTitle}`);
     }
 }
 
