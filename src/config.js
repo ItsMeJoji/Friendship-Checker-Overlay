@@ -15,6 +15,8 @@ export const CONFIG = {
     dynamaxDuration: 60000,
     username: getUrlParameter('username'), // Store channel name here
     client_id: getUrlParameter('client_id') || localStorage.getItem('saved_client_id') || '',
+    streamerbot_ws: getUrlParameter('sb_ws') || localStorage.getItem('sb_ws') || 'ws://127.0.0.1:8080/',
+    streamerbot_enabled: getUrlParameter('sb_enabled') !== 'false' && localStorage.getItem('sb_enabled') !== 'false',
     specialUsers: {
         'itsmejoji': 'blastoise-s',
         'nightbot': 'porygon-z-s',

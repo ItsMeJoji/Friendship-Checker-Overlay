@@ -49,13 +49,19 @@ export async function ensureAuth() {
 // Automatically initiate authentication on load
 ensureAuth();
 
+function sanitizeKey(key) {
+    if (!key) return 'unknown';
+    return String(key).replace(/[.#$\[\]\/]/g, '_');
+}
+
 /**
  * Saves a user's Pokémon to the cloud.
  */
 export async function savePokemonToCloud(username, pokemonName) {
     try {
         await ensureAuth();
-        await set(ref(db, 'users/' + username), {
+        const safeUser = sanitizeKey(username);
+        await set(ref(db, 'users/' + safeUser), {
             storedPokemon: pokemonName,
             lastUpdated: Date.now()
         });
@@ -71,7 +77,8 @@ export async function loadPokemonFromCloud(username) {
     try {
         await ensureAuth();
         const dbRef = ref(db);
-        const snapshot = await get(child(dbRef, `users/${username}`));
+        const safeUser = sanitizeKey(username);
+        const snapshot = await get(child(dbRef, `users/${safeUser}`));
         if (snapshot.exists()) {
             return snapshot.val().storedPokemon;
         }

@@ -7,8 +7,48 @@ import { retrieveAccessToken, authTwitch, getAccessTokenFromUrl, storeAccessToke
 import { handleRedemption } from './redemptionManager.js';
 import { fetchExternalEmotes } from './emoteManager.js';
 import { saveStreamerConfig, loadStreamerConfig, clearStreamerToken } from './firebaseStorage.js';
+import { initStreamerBot } from './streamerbot.js';
 
 let sessionId = '';
+
+function handleChatMessage({ username, message, isOwner = false, emotes = null }) {
+    if (!username || !message) return;
+    const chatter = { user_name: username, emotes };
+
+    // This handles both initial spawn and message updates
+    addPokemon(chatter, message);
+
+    const cleanCmd = message.trim().toLowerCase().split(/\s+/)[0];
+
+    if (cleanCmd === '!jump') {
+        const p = state.pokemon.find(p => p.username === username);
+        if (p) {
+            const currentSpeed = Math.hypot(p.vx, p.vy) || CONFIG.baseSpeed;
+            p.vy = -Math.abs(p.vy || 1) - 4;
+            p.vx = (p.vx >= 0 ? 1 : -1) * currentSpeed;
+        }
+    }
+
+    // Commands (streamer / admin)
+    const isAdmin = isOwner || username.toLowerCase() === 'itsmejoji' || (CONFIG.username && username.toLowerCase() === CONFIG.username.toLowerCase());
+    if (isAdmin) {
+        if (message.trim() === '!spawn') spawnTestPokemon();
+        if (message.trim() === '!reset') resetOverlay();
+        if (message.trim() === '!dynamax') {
+            handleRedemption({ reward: { title: "Dynamax!" }, user_login: username });
+        }
+        if (message.trim() === '!speed') {
+            handleRedemption({ reward: { title: "X-Speed!" }, user_login: username });
+        }
+        if (message.trim() === '!nudge') {
+            nudgeSprites();
+        }
+    }
+
+    if (cleanCmd === '!checkpokemon') {
+        checkPokemonMessage(username);
+    }
+}
 
 async function init() {
     state.canvas = document.getElementById('mainCanvas');
@@ -56,75 +96,49 @@ async function init() {
         }
     }
 
-    // Only redirect if we have no token at all
-    if (!token) {
-        if (!clientId) {
-            console.error("Missing clientId or stored credentials to authenticate with Twitch. Please open /help/ to authorize.");
-            return;
-        }
-        console.log("No valid token found, redirecting to Twitch...");
+    // Only redirect if explicitly forced to authenticate Twitch
+    if (forceAuth && clientId) {
+        console.log("Force auth requested, redirecting to Twitch...");
         authTwitch(clientId, redirectUri);
         return;
     }
 
-    const obsUrl = `${window.location.origin}${window.location.pathname}?username=${CONFIG.username}`;
-    console.log("OBS BROWSER SOURCE URL (token synced via cloud):");
-    console.log(obsUrl);
+    if (username) {
+        const obsUrl = `${window.location.origin}${window.location.pathname}?username=${CONFIG.username}`;
+        console.log("OBS BROWSER SOURCE URL (token synced via cloud):");
+        console.log(obsUrl);
 
-    // Connect to Twitch
-    state.client = new tmi.Client({
-        options: { debug: true, skipUpdatingEmotesets: true },
-        connection: { reconnect: true, secure: true },
-        channels: [username]
-    });
+        // Connect to Twitch Chat
+        state.client = new tmi.Client({
+            options: { debug: true, skipUpdatingEmotesets: true },
+            connection: { reconnect: true, secure: true },
+            channels: [username]
+        });
 
-    state.client.connect().catch(console.error);
+        state.client.connect().catch(console.error);
 
-    state.client.on('message', (channel, tags, message, self) => {
-        const username = tags.username;
-        const chatter = { user_name: username, emotes: tags.emotes };
+        state.client.on('message', (channel, tags, message, self) => {
+            const chatterUser = tags.username;
+            const isBroadcaster = Boolean(tags.badges?.broadcaster === '1' || chatterUser.toLowerCase() === username.toLowerCase());
+            handleChatMessage({ username: chatterUser, message, isOwner: isBroadcaster, emotes: tags.emotes });
+        });
 
-        // This now handles both initial spawn and message updates
-        addPokemon(chatter, message);
-
-        const cleanCmd = message.trim().toLowerCase().split(/\s+/)[0];
-
-        if (cleanCmd === '!jump') {
-            const p = state.pokemon.find(p => p.username === username);
-            if (p) {
-                const currentSpeed = Math.hypot(p.vx, p.vy) || CONFIG.baseSpeed;
-                p.vy = -Math.abs(p.vy || 1) - 4;
-                p.vx = (p.vx >= 0 ? 1 : -1) * currentSpeed;
-            }
+        // Connect to EventSub if Twitch token is present
+        if (token) {
+            connectToEventSub(token, username, clientId);
+            console.log('EventSub Connected.');
+        } else {
+            console.log('No Twitch token found. Skipping EventSub connection.');
         }
-
-        // Commands
-        if (username === 'itsmejoji') {
-            if (message.trim() === '!spawn') spawnTestPokemon();
-            if (message.trim() === '!reset') resetOverlay();
-            if (message.trim() === '!dynamax') {
-                handleRedemption({ reward: { title: "Dynamax!" }, user_login: username });
-            }
-            if (message.trim() === '!speed') {
-                handleRedemption({ reward: { title: "X-Speed!" }, user_login: username });
-            }
-            if (message.trim() === '!nudge') {
-                nudgeSprites();
-            }
-        }
-
-        if (cleanCmd === '!checkpokemon') {
-            checkPokemonMessage(username);
-        }
-    });
-
-    // Connect to EventSub
-    if (token) {
-        connectToEventSub(token, username, clientId);
-        console.log('EventSub Connected.');
     } else {
-        console.log('No token found. Skipping EventSub connection.');
+        console.log('No Twitch username configured. Twitch chat disabled.');
     }
+
+    // Connect to Streamer.bot for YouTube live stream messages
+    initStreamerBot(({ username: ytUser, message: ytMessage, isOwner }) => {
+        console.log(`[YouTube via Streamer.bot] ${ytUser}: ${ytMessage}`);
+        handleChatMessage({ username: ytUser, message: ytMessage, isOwner });
+    });
 
     // Start Loop
     loop();
